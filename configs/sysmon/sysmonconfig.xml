@@ -1,0 +1,104 @@
+<Sysmon schemaversion="4.90">
+  <HashAlgorithms>sha256</HashAlgorithms>
+  <CheckRevocation/>
+
+  <EventFiltering>
+
+    <!-- Process Creation -->
+    <RuleGroup name="" groupRelation="or">
+      <ProcessCreate onmatch="include">
+        <!-- Suspicious shells spawned by Office/browser -->
+        <ParentImage condition="image">WINWORD.EXE</ParentImage>
+        <ParentImage condition="image">EXCEL.EXE</ParentImage>
+        <ParentImage condition="image">POWERPNT.EXE</ParentImage>
+        <ParentImage condition="image">chrome.exe</ParentImage>
+        <ParentImage condition="image">firefox.exe</ParentImage>
+        <!-- Recon and lateral movement tools -->
+        <Image condition="image">net.exe</Image>
+        <Image condition="image">net1.exe</Image>
+        <Image condition="image">whoami.exe</Image>
+        <Image condition="image">ipconfig.exe</Image>
+        <Image condition="image">nmap.exe</Image>
+        <Image condition="image">mimikatz.exe</Image>
+        <Image condition="image">psexec.exe</Image>
+        <Image condition="image">wmic.exe</Image>
+        <Image condition="image">certutil.exe</Image>
+        <Image condition="image">bitsadmin.exe</Image>
+        <Image condition="image">regsvr32.exe</Image>
+        <Image condition="image">mshta.exe</Image>
+        <Image condition="image">rundll32.exe</Image>
+        <!-- PowerShell execution -->
+        <Image condition="image">powershell.exe</Image>
+        <Image condition="image">pwsh.exe</Image>
+        <CommandLine condition="contains">-EncodedCommand</CommandLine>
+        <CommandLine condition="contains">-enc </CommandLine>
+        <CommandLine condition="contains">IEX</CommandLine>
+        <CommandLine condition="contains">Invoke-Expression</CommandLine>
+        <CommandLine condition="contains">DownloadString</CommandLine>
+        <CommandLine condition="contains">-WindowStyle Hidden</CommandLine>
+      </ProcessCreate>
+    </RuleGroup>
+
+    <!-- Network Connections -->
+    <RuleGroup name="" groupRelation="or">
+      <NetworkConnect onmatch="include">
+        <!-- C2 common ports -->
+        <DestinationPort condition="is">4444</DestinationPort>
+        <DestinationPort condition="is">1337</DestinationPort>
+        <DestinationPort condition="is">8443</DestinationPort>
+        <DestinationPort condition="is">9001</DestinationPort>
+        <!-- Unusual outbound from system processes -->
+        <Image condition="image">lsass.exe</Image>
+        <Image condition="image">svchost.exe</Image>
+        <!-- Remote management -->
+        <DestinationPort condition="is">3389</DestinationPort>
+        <DestinationPort condition="is">5985</DestinationPort>
+        <DestinationPort condition="is">5986</DestinationPort>
+      </NetworkConnect>
+    </RuleGroup>
+
+    <!-- File Creation — watch for common malware drop paths -->
+    <RuleGroup name="" groupRelation="or">
+      <FileCreate onmatch="include">
+        <TargetFilename condition="contains">\AppData\Roaming\</TargetFilename>
+        <TargetFilename condition="contains">\AppData\Local\Temp\</TargetFilename>
+        <TargetFilename condition="end with">.exe</TargetFilename>
+        <TargetFilename condition="end with">.ps1</TargetFilename>
+        <TargetFilename condition="end with">.bat</TargetFilename>
+        <TargetFilename condition="end with">.vbs</TargetFilename>
+        <TargetFilename condition="end with">.hta</TargetFilename>
+      </FileCreate>
+    </RuleGroup>
+
+    <!-- Registry modifications — persistence mechanisms -->
+    <RuleGroup name="" groupRelation="or">
+      <RegistryEvent onmatch="include">
+        <TargetObject condition="contains">CurrentVersion\Run</TargetObject>
+        <TargetObject condition="contains">CurrentVersion\RunOnce</TargetObject>
+        <TargetObject condition="contains">Winlogon</TargetObject>
+        <TargetObject condition="contains">Image File Execution Options</TargetObject>
+        <TargetObject condition="contains">AppInit_DLLs</TargetObject>
+        <TargetObject condition="contains">CurrentVersion\Explorer\Shell Folders</TargetObject>
+      </RegistryEvent>
+    </RuleGroup>
+
+    <!-- DNS queries — detect C2 beaconing, DGA domains -->
+    <RuleGroup name="" groupRelation="or">
+      <DnsQuery onmatch="exclude">
+        <!-- Exclude known-good -->
+        <QueryName condition="end with">.microsoft.com</QueryName>
+        <QueryName condition="end with">.windows.com</QueryName>
+        <QueryName condition="end with">.windowsupdate.com</QueryName>
+      </DnsQuery>
+    </RuleGroup>
+
+    <!-- Exclude noisy low-value events -->
+    <RuleGroup name="" groupRelation="or">
+      <ProcessCreate onmatch="exclude">
+        <Image condition="is">C:\Windows\System32\conhost.exe</Image>
+        <Image condition="is">C:\Windows\System32\WerFault.exe</Image>
+      </ProcessCreate>
+    </RuleGroup>
+
+  </EventFiltering>
+</Sysmon>
