@@ -1,0 +1,67 @@
+winlogbeat.event_logs:
+  - name: Microsoft-Windows-Sysmon/Operational
+    ignore_older: 72h
+    tags: [sysmon]
+
+  - name: Security
+    ignore_older: 72h
+    event_id:
+      # Logon/Logoff
+      - 4624   # Successful logon
+      - 4625   # Failed logon
+      - 4634   # Logoff
+      - 4648   # Explicit credential logon (runas)
+      - 4672   # Special privileges assigned
+      # Account management
+      - 4720   # User account created
+      - 4732   # User added to security group
+      - 4756   # User added to universal group
+      - 4728   # Member added to global group
+      # Process / privilege
+      - 4688   # Process creation (if audit enabled)
+      - 4697   # Service installed
+      # Kerberos
+      - 4768   # Kerberos TGT request
+      - 4769   # Kerberos service ticket
+      - 4771   # Kerberos pre-auth failed
+    tags: [windows-security]
+
+  - name: System
+    ignore_older: 24h
+    event_id:
+      - 7045   # New service installed
+      - 7036   # Service state change
+    tags: [windows-system]
+
+  - name: Windows PowerShell
+    ignore_older: 72h
+    tags: [powershell]
+
+  - name: Microsoft-Windows-PowerShell/Operational
+    ignore_older: 72h
+    event_id:
+      - 4103   # Module logging
+      - 4104   # Script block logging
+    tags: [powershell, scriptblock]
+
+processors:
+  - add_host_metadata:
+      when.not.contains.tags: forwarded
+  - add_fields:
+      target: ''
+      fields:
+        lab_source: windows-vm
+
+output.elasticsearch:
+  hosts: ["${ELASTICSEARCH_HOST:elasticsearch:9200}"]
+  index: "winlogbeat-%{[agent.version]}-%{+yyyy.MM.dd}"
+
+setup.template.name: "winlogbeat"
+setup.template.pattern: "winlogbeat-*"
+setup.kibana:
+  host: "${KIBANA_HOST:kibana:5601}"
+
+logging.level: info
+logging.to_files: true
+logging.files:
+  path: C:/ProgramData/winlogbeat/Logs
