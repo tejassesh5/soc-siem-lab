@@ -1,0 +1,63 @@
+filebeat.inputs:
+  # Zeek logs
+  - type: log
+    enabled: true
+    paths:
+      - /opt/zeek/logs/current/conn.log
+      - /opt/zeek/logs/current/dns.log
+      - /opt/zeek/logs/current/http.log
+      - /opt/zeek/logs/current/ssh.log
+      - /opt/zeek/logs/current/ssl.log
+      - /opt/zeek/logs/current/files.log
+      - /opt/zeek/logs/current/notice.log
+    json.keys_under_root: true
+    json.add_error_key: true
+    tags: [zeek]
+    fields:
+      lab_source: linux-vm
+    fields_under_root: true
+
+  # Syslog (Linux auth events)
+  - type: log
+    enabled: true
+    paths:
+      - /var/log/auth.log
+      - /var/log/syslog
+    tags: [linux-syslog]
+    fields:
+      lab_source: linux-vm
+    fields_under_root: true
+
+  # UFW firewall
+  - type: log
+    enabled: true
+    paths:
+      - /var/log/ufw.log
+    tags: [ufw, firewall]
+    fields:
+      lab_source: linux-vm
+    fields_under_root: true
+
+processors:
+  - add_host_metadata: {}
+  - dissect:
+      when.contains.tags: linux-syslog
+      tokenizer: "%{timestamp} %{hostname} %{program}: %{message}"
+      field: "message"
+      target_prefix: "syslog"
+      ignore_failure: true
+
+output.elasticsearch:
+  hosts: ["${ELASTICSEARCH_HOST:elasticsearch:9200}"]
+  indices:
+    - index: "zeek-%{[agent.version]}-%{+yyyy.MM.dd}"
+      when.contains.tags: zeek
+    - index: "linux-syslog-%{[agent.version]}-%{+yyyy.MM.dd}"
+      when.contains.tags: linux-syslog
+    - index: "ufw-%{[agent.version]}-%{+yyyy.MM.dd}"
+      when.contains.tags: ufw
+
+setup.kibana:
+  host: "${KIBANA_HOST:kibana:5601}"
+
+logging.level: info
