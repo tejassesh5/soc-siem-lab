@@ -12,6 +12,11 @@ services:
       - "9200:9200"
     volumes:
       - elastic-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   kibana:
     image: docker.elastic.co/kibana/kibana:8.13.0
@@ -21,7 +26,52 @@ services:
     ports:
       - "5601:5601"
     depends_on:
-      - elasticsearch
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5601/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Filebeat — ships Zeek + Linux syslog to Elasticsearch
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.13.0
+    container_name: filebeat
+    user: root
+    volumes:
+      - ./configs/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /var/log:/var/log:ro
+    environment:
+      - ELASTICSEARCH_HOST=elasticsearch:9200
+      - KIBANA_HOST=kibana:5601
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    command: filebeat -e -strict.perms=false
+
+  # Kibana dashboard importer — runs once on startup
+  kibana-setup:
+    image: curlimages/curl:8.6.0
+    container_name: kibana-setup
+    depends_on:
+      kibana:
+        condition: service_healthy
+    volumes:
+      - ./dashboards:/dashboards:ro
+    entrypoint: >
+      sh -c "
+        echo 'Importing index patterns and dashboards...' &&
+        curl -s -X POST 'http://kibana:5601/api/saved_objects/_import?overwrite=true'
+          -H 'kbn-xsrf: true'
+          --form file=@/dashboards/soc-overview.ndjson &&
+        echo 'Setup complete.'
+      "
+    restart: "no"
 
 volumes:
   elastic-data:
+
+networks:
+  default:
+    name: soc-lab

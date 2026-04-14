@@ -1,0 +1,4 @@
+{"type":"dashboard","id":"soc-overview","attributes":{"title":"SOC Overview","description":"Top-level SOC triage dashboard — auth failures, process creation, network anomalies","panelsJSON":"[]","optionsJSON":"{\"useMargins\":true,\"syncColors\":false}","version":1,"timeRestore":false,"kibanaSavedObjectMeta":{"searchSourceJSON":"{\"query\":{\"query\":\"\",\"language\":\"kuery\"},\"filter\":[]}"}},"references":[],"migrationVersion":{"dashboard":"7.15.0"}}
+{"type":"index-pattern","id":"winlogbeat-*","attributes":{"title":"winlogbeat-*","timeFieldName":"@timestamp"}}
+{"type":"index-pattern","id":"zeek-*","attributes":{"title":"zeek-*","timeFieldName":"@timestamp"}}
+{"type":"index-pattern","id":"linux-syslog-*","attributes":{"title":"linux-syslog-*","timeFieldName":"@timestamp"}}
