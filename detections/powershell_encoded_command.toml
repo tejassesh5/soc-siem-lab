@@ -1,0 +1,33 @@
+[metadata]
+creation_date = "2026-04-09"
+maturity = "production"
+updated_date = "2026-04-14"
+
+[rule]
+name = "PowerShell Encoded Command Execution"
+description = """
+Detects PowerShell launched with -EncodedCommand or -enc flags,
+commonly used to obfuscate malicious payloads and bypass script block logging.
+Maps to T1059.001 (Command and Scripting Interpreter: PowerShell).
+"""
+author = ["SOC Lab"]
+tags = ["T1059", "T1059.001", "defense-evasion", "execution"]
+severity = "high"
+risk_score = 69
+type = "query"
+index = ["winlogbeat-*"]
+language = "kuery"
+query = '''
+winlog.event_id: (4104 or 4103) and
+(
+  winlog.event_data.ScriptBlockText: *EncodedCommand* or
+  winlog.event_data.ScriptBlockText: *-enc* or
+  winlog.event_data.ScriptBlockText: *IEX* or
+  winlog.event_data.ScriptBlockText: *Invoke-Expression* or
+  winlog.event_data.ScriptBlockText: *DownloadString*
+)
+'''
+
+[rule.references]
+mitre_attack = "https://attack.mitre.org/techniques/T1059/001/"
+sigma = "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/powershell/"

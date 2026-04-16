@@ -1,0 +1,30 @@
+[metadata]
+creation_date = "2026-04-11"
+maturity = "production"
+updated_date = "2026-04-14"
+
+[rule]
+name = "Port Scan — Multiple Rejected Connections"
+description = """
+Detects horizontal or vertical port scanning: >10 rejected/blocked
+connections from the same source IP within 60 seconds.
+Zeek Notice::SCAN or UFW BLOCK log correlation.
+"""
+author = ["SOC Lab"]
+tags = ["T1046", "discovery", "network-scan"]
+severity = "medium"
+risk_score = 47
+type = "threshold"
+index = ["zeek-*", "ufw-*", "linux-syslog-*"]
+language = "kuery"
+query = '''
+(tags: zeek and zeek.notice.note: "Scan::Port_Scan") or
+(tags: ufw and message: "UFW BLOCK")
+'''
+
+[rule.threshold]
+field = ["source_ip"]
+value = 10
+
+[rule.references]
+mitre_attack = "https://attack.mitre.org/techniques/T1046/"

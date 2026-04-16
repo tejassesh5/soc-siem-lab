@@ -1,0 +1,26 @@
+[metadata]
+creation_date = "2026-04-11"
+maturity = "production"
+updated_date = "2026-04-14"
+
+[rule]
+name = "Local Admin Account Created or Added to Admin Group"
+description = """
+Detects creation of a new local user account (4720) or a user being added
+to the Administrators group (4732). Common persistence technique post-compromise.
+"""
+author = ["SOC Lab"]
+tags = ["T1136", "T1136.001", "T1098", "persistence", "privilege-escalation"]
+severity = "high"
+risk_score = 71
+type = "query"
+index = ["winlogbeat-*"]
+language = "kuery"
+query = '''
+winlog.event_id: (4720 or 4732 or 4728 or 4756) and
+winlog.channel: "Security"
+'''
+
+[rule.references]
+mitre_attack = "https://attack.mitre.org/techniques/T1136/001/"
+cis_control = "CIS Control 5 — Account Management"

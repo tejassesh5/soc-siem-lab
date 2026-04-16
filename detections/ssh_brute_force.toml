@@ -1,0 +1,29 @@
+[metadata]
+creation_date = "2026-04-08"
+maturity = "production"
+updated_date = "2026-04-14"
+
+[rule]
+name = "SSH Brute Force — Multiple Failed Logins"
+description = """
+Detects more than 5 failed SSH login attempts from the same source IP
+within a 1-minute window. Indicates credential stuffing or brute-force attack.
+"""
+author = ["SOC Lab"]
+tags = ["T1110", "T1110.001", "lateral-movement", "credential-access"]
+severity = "high"
+risk_score = 73
+type = "threshold"
+index = ["linux-syslog-*", "winlogbeat-*", "zeek-*"]
+language = "kuery"
+query = '''
+message: "Failed password" and message: "ssh"
+'''
+
+[rule.threshold]
+field = ["source_ip"]
+value = 5
+
+[rule.references]
+mitre_attack = "https://attack.mitre.org/techniques/T1110/001/"
+cis_control = "CIS Control 4 — Secure Configuration"
